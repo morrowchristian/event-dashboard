@@ -1,0 +1,32 @@
+{
+  "name": "event-dashboard",
+  "version": "1.0.0",
+  "description": "A real-time event dashboard for team management",
+  "type": "module",
+  "main": "src/App.js",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "start": "python -m http.server 8000",
+    "test": "echo \"No tests yet\" && exit 0",
+    "lint": "echo \"No linter configured\" && exit 0",
+    "build": "echo \"No build process yet\" && exit 0",
+    "deploy": "echo \"Deploy to GitHub Pages\" && exit 0"
+  },
+  "keywords": [
+    "dashboard",
+    "events",
+    "team-management",
+    "real-time",
+    "javascript"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/event-dashboard"
+  },
+  "homepage": "https://yourusername.github.io/event-dashboard",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
