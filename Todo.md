@@ -10,6 +10,7 @@
 - [x] Responsive design
 
 ## Phase 2: Enhanced Features 🚧
+- [ ] Update layout and design making it more user-friendly and no scrolling. its a dashboard, everything should be right there for real time monitoring 
 - [ ] Real-time data synchronization
 - [ ] Event creation/editing modal
 - [ ] Local storage persistence
