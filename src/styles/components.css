@@ -76,11 +76,39 @@
     list-style: none;
 }
 
+.date-group {
+    margin-bottom: 20px;
+}
+
+.date-header {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--primary);
+    padding: 8px 0;
+    margin-bottom: 10px;
+    border-bottom: 2px solid rgba(67, 97, 238, 0.2);
+    display: flex;
+    align-items: center;
+}
+
+.date-header::before {
+    content: '📅';
+    margin-right: 8px;
+}
+
 .event-item {
     padding: 12px 0;
     border-bottom: 1px solid #f0f0f0;
     display: flex;
     align-items: center;
+    transition: background 0.2s ease;
+}
+
+.event-item:hover {
+    background: rgba(67, 97, 238, 0.03);
+    border-radius: 4px;
+    padding-left: 8px;
+    margin-left: -8px;
 }
 
 .event-item:last-child {
@@ -90,11 +118,13 @@
 .event-time {
     font-weight: 600;
     margin-right: 15px;
-    min-width: 70px;
+    min-width: 80px;
+    font-size: 0.9rem;
 }
 
 .event-title {
     flex: 1;
+    font-size: 0.95rem;
 }
 
 .event-status {
@@ -177,4 +207,17 @@
     display: flex;
     gap: 10px;
     margin-top: 20px;
+}
+
+/* Form Row for Date and Time */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+@media (max-width: 640px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
 }

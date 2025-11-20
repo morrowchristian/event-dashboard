@@ -10,6 +10,7 @@ class App {
     constructor() {
         this.isMobileMenuOpen = false;
         this.loadDataFromStorage();
+        
         this.components = {
             dashboard: new Dashboard(),
             eventList: new EventList(),
@@ -22,6 +23,7 @@ class App {
         this.setupEventListeners();
         this.initializeRealTimeUpdates();
         this.setupDataChangeListeners();
+        this.updateEventsDisplay();
         console.log('Event Dashboard initialized');
     }
 
@@ -29,6 +31,7 @@ class App {
         const storedEvents = storage.get(STORAGE_KEYS.EVENTS_DATA);
         if (storedEvents && Array.isArray(storedEvents) && storedEvents.length > 0) {
             DataManager.events = storedEvents;
+            document.dispatchEvent(new CustomEvent('events:updated'));
         }
     }
 
@@ -42,8 +45,8 @@ class App {
 
         appContainer.innerHTML = `
             <div class="dashboard-container">
-                <button class="mobile-menu-toggle" id="mobile-menu-toggle">
-                    <i class="fas fa-bars"></i>
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle" style="pointer-events: auto;">
+                    <i class="fas fa-bars" style="pointer-events: none;"></i>
                 </button>
 
                 <div class="sidebar ${this.isMobileMenuOpen ? 'mobile-open' : ''}" id="sidebar">
@@ -113,15 +116,28 @@ class App {
                             <span class="error-message" id="title-error"></span>
                         </div>
 
-                        <div class="form-group">
-                            <label for="event-time">Time *</label>
-                            <input 
-                                type="time" 
-                                id="event-time" 
-                                name="time" 
-                                required
-                            >
-                            <span class="error-message" id="time-error"></span>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="event-date">Date *</label>
+                                <input 
+                                    type="date" 
+                                    id="event-date" 
+                                    name="date" 
+                                    required
+                                >
+                                <span class="error-message" id="date-error"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="event-time">Time *</label>
+                                <input 
+                                    type="time" 
+                                    id="event-time" 
+                                    name="time" 
+                                    required
+                                >
+                                <span class="error-message" id="time-error"></span>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -186,17 +202,6 @@ class App {
         if (modalClose) modalClose.addEventListener('click', () => this.closeEventModal());
         if (cancelBtn) cancelBtn.addEventListener('click', () => this.closeEventModal());
         if (eventForm) eventForm.addEventListener('submit', (e) => this.handleEventSubmit(e));
-
-        // Real-time form validation
-        // const titleInput = document.getElementById('event-title');
-        // const timeInput = document.getElementById('event-time');
-        
-        // if (titleInput) {
-        //     titleInput.addEventListener('input', () => this.validateField('title'));
-        // }
-        // if (timeInput) {
-        //     timeInput.addEventListener('change', () => this.validateField('time'));
-        // }
 
         // Navigation
         document.querySelectorAll('.nav-links li').forEach(item => {
@@ -285,6 +290,15 @@ class App {
         const modal = document.getElementById('event-modal');
         if (modal) {
             modal.classList.remove('hidden');
+            
+            const now = new Date();
+            const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+                        .toISOString().split('T')[0];
+            
+            console.log('Setting default date to:', today);
+            
+            const dateInput = document.getElementById('event-date');
+            if (dateInput) dateInput.value = today;
             document.getElementById('event-title')?.focus();
         }
     }
@@ -299,47 +313,6 @@ class App {
         this.clearFormErrors();
     }
 
-    validateField(fieldName) {
-        const fieldMap = {
-            title: 'event-title',
-            time: 'event-time',
-            status: 'event-status'
-        };
-
-        const inputId = fieldMap[fieldName];
-        const input = document.getElementById(inputId);
-        const errorElement = document.getElementById(`${fieldName}-error`);
-
-        if (!input || !errorElement) return true;
-
-        let errorMessage = '';
-
-        if (fieldName === 'title') {
-            const value = input.value.trim();
-            if (!value) {
-                errorMessage = 'Event title is required';
-            } else if (value.length < 3) {
-                errorMessage = 'Event title must be at least 3 characters';
-            }
-        } else if (fieldName === 'time') {
-            if (!input.value) {
-                errorMessage = 'Please select a time';
-            }
-        }
-
-        if (errorMessage) {
-            errorElement.textContent = errorMessage;
-            errorElement.style.display = 'block';
-            input.classList.add('error');
-            return false;
-        } else {
-            errorElement.textContent = '';
-            errorElement.style.display = 'none';
-            input.classList.remove('error');
-            return true;
-        }
-    }
-
     validateForm(formData) {
         const errors = {};
         let isValid = true;
@@ -347,6 +320,12 @@ class App {
         // Validate title
         if (!formData.title || formData.title.trim().length < 3) {
             errors.title = 'Event title must be at least 3 characters';
+            isValid = false;
+        }
+
+        // Validate date
+        if (!formData.date) {
+            errors.date = 'Please select a date';
             isValid = false;
         }
 
@@ -401,18 +380,18 @@ class App {
 
         const formData = {
             title: document.getElementById('event-title')?.value.trim(),
+            date: document.getElementById('event-date')?.value,
             time: this.formatTime(document.getElementById('event-time')?.value),
             status: document.getElementById('event-status')?.value
         };
 
+        console.log('=== EVENT SUBMIT DEBUG ===');
+        console.log('Form date input:', formData.date);
+        console.log('Today actual:', new Date().toISOString().split('T')[0]);
+        console.log('======================');
         const validation = this.validateForm(formData);
 
-        console.log('Validation result:', validation);
-        console.log('Errors:', validation.errors);
-        console.log('Error count:', Object.keys(validation.errors).length);
-        
         if (!validation.isValid) {
-            console.log('About to display errors...');
             this.displayFormErrors(validation.errors);
             this.showNotification('Please fix form errors', 'error');
             return;
@@ -422,6 +401,8 @@ class App {
 
         setTimeout(() => {
             try {
+                // Add formatted date to the event
+                formData.dateFormatted = this.formatDate(formData.date);
                 DataManager.addEvent(formData);
                 this.saveDataToStorage();
                 this.closeEventModal();
@@ -445,6 +426,30 @@ class App {
         const hour12 = hour % 12 || 12;
         
         return `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+    }
+
+    formatDate(dateString) {
+        if (!dateString) return '';
+        
+        console.log('=== DATE DEBUGGING ===');
+        console.log('Input dateString:', dateString);
+        
+        // Test different parsing methods
+        const [year, month, day] = dateString.split('-');
+        const dateLocal = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const dateUTC = new Date(dateString + 'T00:00:00');
+        
+        console.log('Local date:', dateLocal.toString());
+        console.log('UTC date:', dateUTC.toString());
+        console.log('Local formatted:', dateLocal.toLocaleDateString('en-US'));
+        console.log('UTC formatted:', dateUTC.toLocaleDateString('en-US'));
+        
+        const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+        const result = dateLocal.toLocaleDateString('en-US', options);
+        console.log('Final result:', result);
+        console.log('=====================');
+        
+        return result;
     }
 
     updateStatsDisplay(newStats) {
@@ -485,16 +490,87 @@ class App {
         const eventList = document.getElementById('schedule-list');
         if (eventList) {
             const events = DataManager.getEvents();
-            eventList.innerHTML = events.map(event => `
-                <li class="event-item" data-event-id="${event.id}">
-                    <div class="event-time">${event.time}</div>
-                    <div class="event-title">${event.title}</div>
-                    <div class="event-status status-${event.status}">
-                        ${event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-                    </div>
-                </li>
-            `).join('');
+            console.log('Updating events display with:', events.length, 'events'); // Debug log
+            
+            // Group and sort events by date
+            const eventsByDate = this.groupEventsByDate(events);
+            
+            if (Object.keys(eventsByDate).length === 0) {
+                eventList.innerHTML = `
+                    <li class="date-group">
+                        <div class="date-header">No Events</div>
+                        <div class="event-item">
+                            <div class="event-title">No events scheduled yet</div>
+                        </div>
+                    </li>
+                `;
+                return;
+            }
+            
+            eventList.innerHTML = Object.keys(eventsByDate)
+                .sort((a, b) => new Date(a) - new Date(b))
+                .map(date => {
+                    const dateEvents = eventsByDate[date];
+                    return `
+                        <li class="date-group">
+                            <div class="date-header">${this.formatDate(date)}</div>
+                            ${dateEvents.map(event => `
+                                <div class="event-item" data-event-id="${event.id}">
+                                    <div class="event-time">${event.time}</div>
+                                    <div class="event-title">${event.title}</div>
+                                    <div class="event-status status-${event.status}">
+                                        ${event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </li>
+                    `;
+                }).join('');
         }
+    }
+
+    groupEventsByDate(events) {
+        if (!events || !Array.isArray(events)) {
+            console.warn('Invalid events data provided to groupEventsByDate');
+            return {};
+        }
+        
+        const grouped = {};
+        events.forEach(event => {
+            if (!event) return;
+            
+            const date = event.date || new Date().toISOString().split('T')[0];
+            if (!grouped[date]) {
+                grouped[date] = [];
+            }
+            grouped[date].push(event);
+        });
+        
+        // Sort events within each date by time
+        Object.keys(grouped).forEach(date => {
+            grouped[date].sort((a, b) => {
+                const timeA = this.timeToMinutes(a.time);
+                const timeB = this.timeToMinutes(b.time);
+                return timeA - timeB;
+            });
+        });
+        
+        return grouped;
+    }
+
+    timeToMinutes(timeStr) {
+        if (!timeStr) return 0;
+        const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (!match) return 0;
+        
+        let hours = parseInt(match[1]);
+        const minutes = parseInt(match[2]);
+        const period = match[3].toUpperCase();
+        
+        if (period === 'PM' && hours !== 12) hours += 12;
+        if (period === 'AM' && hours === 12) hours = 0;
+        
+        return hours * 60 + minutes;
     }
 
     updateTimeDisplay(time) {
