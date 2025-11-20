@@ -3,6 +3,7 @@
 A real-time event management dashboard built with modern web technologies. Designed for teams of up to 20 people with cross-industry applicability.
 
 ![Dashboard Preview](docs/images/dashboard-preview.png)
+![Add Event Modal Preview](docs/images/addEventModal-preview.png)
 
 ## 🚀 Features
 
