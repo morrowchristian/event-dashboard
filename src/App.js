@@ -1,100 +1,172 @@
+/**
+ * Main Application Controller
+ * Orchestrates the entire dashboard application
+ * Manages components, UI interactions, data flow, and real-time updates
+ */
+
 import Dashboard from './components/Dashboard.js';
 import EventList from './components/EventList.js';
 import TeamMembers from './components/TeamMembers.js';
+import WeeklyCalendar from './components/WeeklyCalendar.js';
 import RealTimeUpdates from './services/realtime-updates.js';
+import DragDropManager from './services/drag-drop-manager.js';
 import DataManager from './services/data-manager.js';
 import { storage, showNotification } from './utils/helpers.js';
 import { STORAGE_KEYS } from './utils/constants.js';
 
 class App {
     constructor() {
+        /**
+         * Tracks mobile menu open/close state
+         * @type {boolean}
+         * @private
+         */
         this.isMobileMenuOpen = false;
+        
+        /**
+         * Current active view for main content area
+         * @type {string}
+         * @private
+         */
+        this.currentView = 'dashboard';
+        
+        // Load persisted data before initializing components
         this.loadDataFromStorage();
         
+        /**
+         * Dashboard component instances
+         * @type {Object}
+         * @property {Dashboard} dashboard - Statistics cards component
+         * @property {EventList} eventList - Event schedule component
+         * @property {TeamMembers} teamMembers - Team members grid component
+         * @property {CalendarView} calendarView - Interactive calendar with drag and drop
+         */
         this.components = {
             dashboard: new Dashboard(),
             eventList: new EventList(),
-            teamMembers: new TeamMembers()
+            teamMembers: new TeamMembers(),
+            calendarView: new WeeklyCalendar()
         };
     }
 
+    /**
+     * Initialize the application
+     * Sets up UI, event listeners, real-time updates, and data synchronization
+     */
     init() {
         this.render();
         this.setupEventListeners();
-        this.initializeRealTimeUpdates();
+        this.initializeServices();
         this.setupDataChangeListeners();
         this.updateEventsDisplay();
         console.log('Event Dashboard initialized');
     }
 
+    /**
+     * Initialize core application services
+     * Starts real-time updates and drag-drop functionality
+     * @private
+     */
+    initializeServices() {
+        RealTimeUpdates.init();
+        DragDropManager.init();
+        this.showNotification('Real-time updates and drag-drop activated', 'success');
+    }
+
+    /**
+     * Load persisted event data from localStorage
+     * Restores events from previous session if available
+     * @private
+     */
     loadDataFromStorage() {
         const storedEvents = storage.get(STORAGE_KEYS.EVENTS_DATA);
         if (storedEvents && Array.isArray(storedEvents) && storedEvents.length > 0) {
             DataManager.events = storedEvents;
+            // Dispatch event to trigger UI updates
             document.dispatchEvent(new CustomEvent('events:updated'));
         }
     }
 
+    /**
+     * Save current events to localStorage
+     * Persists event data for future sessions
+     * @private
+     */
     saveDataToStorage() {
         const events = DataManager.getEvents();
         storage.set(STORAGE_KEYS.EVENTS_DATA, events);
     }
 
+    /**
+     * Render the complete application UI
+     * Creates sidebar navigation, main content area, modals, and overlays
+     * Dynamically renders content based on current view selection
+     * @private
+     */
     render() {
         const appContainer = document.getElementById('app');
 
         appContainer.innerHTML = `
             <div class="dashboard-container">
+                <!-- Mobile hamburger menu button (visible < 968px) -->
                 <button class="mobile-menu-toggle" id="mobile-menu-toggle" style="pointer-events: auto;">
                     <i class="fas fa-bars" style="pointer-events: none;"></i>
                 </button>
 
+                <!-- Sidebar Navigation -->
                 <div class="sidebar ${this.isMobileMenuOpen ? 'mobile-open' : ''}" id="sidebar">
                     <div class="logo">
                         <h1><i class="fas fa-calendar-alt"></i> EventFlow</h1>
                     </div>
+                    <!-- Navigation menu items -->
                     <ul class="nav-links">
-                        <li class="active"><i class="fas fa-home"></i> Dashboard</li>
-                        <li><i class="fas fa-calendar-day"></i> Events</li>
-                        <li><i class="fas fa-tasks"></i> Tasks</li>
-                        <li><i class="fas fa-users"></i> Team</li>
+                        <li class="active" data-view="dashboard"><i class="fas fa-home"></i> Dashboard</li>
+                        <li data-view="calendarView"><i class="fas fa-calendar-day"></i> Calendar</li>
+                        <li data-view="eventList"><i class="fas fa-list"></i> Events</li>
+                        <li data-view="teamMembers"><i class="fas fa-users"></i> Team</li>
                     </ul>
+                    <!-- Real-time updates status indicator -->
                     <div class="realtime-status">
                         <i class="fas fa-circle status-indicator"></i>
                         <span>Live Updates Active</span>
                     </div>
                 </div>
 
+                <!-- Main Content Area -->
                 <div class="main-content">
+                    <!-- Header with time and user info -->
                     <div class="header">
                         <div>
-                            <h2>Event Dashboard</h2>
+                            <h2>Event Dashboard - ${this.getViewTitle()}</h2>
                             <div class="current-time" id="current-time"></div>
                         </div>
+                        
+                        <div class="header-actions">
+                            <button class="btn btn-outline" id="refresh-btn">
+                                <i class="fas fa-sync"></i> Refresh Data
+                            </button>
+                            <button class="btn btn-primary" id="add-event-btn">
+                                <i class="fas fa-plus"></i> Add Event
+                            </button>
+                        </div>
+                        
                         <div class="user-info">
                             <div class="user-avatar">JD</div>
                             <span>John Doe</span>
                         </div>
                     </div>
 
-                    <div class="dashboard-layout">
-                        <div class="stats-section">
-                            ${this.components.dashboard.render()}
-                        </div>
-                        <div class="events-section">
-                            ${this.components.eventList.render()}
-                        </div>
-                        <div class="team-section">
-                            ${this.components.teamMembers.render()}
-                        </div>
+                    <!-- Dynamic content area based on current view -->
+                    <div id="view-container">
+                        ${this.renderCurrentView()}
                     </div>
                 </div>
             </div>
 
-            <!-- Notification Container -->
+            <!-- Toast Notification Container (top-right) -->
             <div id="notification-container" class="notification-container"></div>
 
-            <!-- Event Modal -->
+            <!-- Event Creation Modal -->
             <div id="event-modal" class="modal hidden">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -104,6 +176,7 @@ class App {
                         </button>
                     </div>
                     <form id="event-form" class="event-form">
+                        <!-- Event title input -->
                         <div class="form-group">
                             <label for="event-title">Event Title *</label>
                             <input 
@@ -116,6 +189,7 @@ class App {
                             <span class="error-message" id="title-error"></span>
                         </div>
 
+                        <!-- Date and time inputs (side-by-side on desktop) -->
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="event-date">Date *</label>
@@ -140,6 +214,7 @@ class App {
                             </div>
                         </div>
 
+                        <!-- Event status dropdown -->
                         <div class="form-group">
                             <label for="event-status">Status *</label>
                             <select id="event-status" name="status" required>
@@ -150,6 +225,7 @@ class App {
                             <span class="error-message" id="status-error"></span>
                         </div>
 
+                        <!-- Form action buttons -->
                         <div class="form-actions">
                             <button type="button" class="btn btn-outline" id="cancel-btn">
                                 Cancel
@@ -162,7 +238,7 @@ class App {
                 </div>
             </div>
 
-            <!-- Loading Overlay -->
+            <!-- Loading Overlay (shown during async operations) -->
             <div id="loading-overlay" class="loading-overlay hidden">
                 <div class="spinner">
                     <i class="fas fa-spinner fa-spin"></i>
@@ -170,8 +246,82 @@ class App {
                 </div>
             </div>
         `;
+
+        // Initialize view-specific functionality after render
+        this.initializeCurrentView();
+
+        // Re-attach navigation listeners after every render
+        this.setupNavigationListeners();
     }
 
+    /**
+     * Get display title for current view
+     * @returns {string} Formatted title for header display
+     * @private
+     */
+    getViewTitle() {
+        const titles = {
+            dashboard: 'Overview',
+            calendarView: 'Calendar',
+            eventList: 'Events',
+            teamMembers: 'Team'
+        };
+        return titles[this.currentView] || 'Dashboard';
+    }
+
+    /**
+     * Render content based on current view selection
+     * @returns {string} HTML string for the active view
+     * @private
+     */
+    renderCurrentView() {
+        switch (this.currentView) {
+            case 'calendarView':
+                return this.components.calendarView.render();
+            case 'eventList':
+                return this.components.eventList.render();
+            case 'teamMembers':
+                return this.components.teamMembers.render();
+            case 'dashboard':
+            default:
+                return `
+                    <div class="dashboard-layout">
+                        <div class="stats-section">
+                            ${this.components.dashboard.render()}
+                        </div>
+                        <div class="events-section">
+                            ${this.components.eventList.render()}
+                        </div>
+                        <div class="team-section">
+                            ${this.components.teamMembers.render()}
+                        </div>
+                    </div>
+                `;
+        }
+    }
+
+    /**
+     * Initialize view-specific functionality after render
+     * Sets up drag and drop for calendar view, event listeners for other views
+     * @private
+     */
+    initializeCurrentView() {
+        // Set up navigation listeners every time we render
+        document.querySelectorAll('.nav-links li').forEach(item => {
+            item.removeEventListener('click', this.handleNavigation);
+            item.addEventListener('click', (e) => this.handleNavigation(e));
+        });
+
+        if (this.currentView === 'calendarView') {
+            this.components.calendarView.initInteractions(); // Updated method name
+        }
+    }
+
+    /**
+     * Set up all event listeners for user interactions
+     * Handles clicks, form submissions, modal controls, and navigation
+     * @private
+     */
     setupEventListeners() {
         // Mobile menu toggle
         const menuToggle = document.getElementById('mobile-menu-toggle');
@@ -182,19 +332,21 @@ class App {
             });
         }
 
-        // Refresh button
-        const refreshBtn = document.getElementById('refresh-btn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.handleRefresh());
-        }
+        // Refresh data button (delegated)
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#refresh-btn')) {
+                this.handleRefresh();
+            }
+        });
 
-        // Add event button
-        const addEventBtn = document.getElementById('add-event-btn');
-        if (addEventBtn) {
-            addEventBtn.addEventListener('click', () => this.openEventModal());
-        }
+        // Add event button (delegated)
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#add-event-btn')) {
+                this.openEventModal();
+            }
+        });
 
-        // Modal controls
+        // Modal close controls
         const modalClose = document.getElementById('modal-close');
         const cancelBtn = document.getElementById('cancel-btn');
         const eventForm = document.getElementById('event-form');
@@ -203,12 +355,10 @@ class App {
         if (cancelBtn) cancelBtn.addEventListener('click', () => this.closeEventModal());
         if (eventForm) eventForm.addEventListener('submit', (e) => this.handleEventSubmit(e));
 
-        // Navigation
-        document.querySelectorAll('.nav-links li').forEach(item => {
-            item.addEventListener('click', (e) => this.handleNavigation(e));
-        });
+        // Sidebar navigation
+        this.setupNavigationListeners();
 
-        // Close modal on outside click
+        // Close modal when clicking backdrop
         const modal = document.getElementById('event-modal');
         if (modal) {
             modal.addEventListener('click', (e) => {
@@ -226,6 +376,27 @@ class App {
         });
     }
 
+    /**
+     * Set up navigation listeners - called after every render
+     * @private
+     */
+    setupNavigationListeners() {
+        // Remove any existing listeners first to prevent duplicates
+        document.querySelectorAll('.nav-links li').forEach(item => {
+            item.replaceWith(item.cloneNode(true));
+        });
+        
+        // Add fresh listeners
+        document.querySelectorAll('.nav-links li').forEach(item => {
+            item.addEventListener('click', (e) => this.handleNavigation(e));
+        });
+    }
+
+    /**
+     * Toggle mobile menu open/closed state
+     * Adds/removes 'mobile-open' class to sidebar
+     * @private
+     */
     toggleMobileMenu() {
         this.isMobileMenuOpen = !this.isMobileMenuOpen;
         const sidebar = document.getElementById('sidebar');
@@ -234,38 +405,46 @@ class App {
         }
     }
 
+    /**
+     * Set up listeners for data change events
+     * Responds to real-time updates from RealTimeUpdates service
+     * @private
+     */
     setupDataChangeListeners() {
-        // Listen for real-time stats updates
+        // Listen for real-time stats updates (every 10s)
         document.addEventListener('stats:updated', (e) => {
             this.updateStatsDisplay(e.detail);
         });
 
-        // Listen for event updates
+        // Listen for event updates (status changes, new events, drag-drop changes)
         document.addEventListener('events:updated', (e) => {
             this.updateEventsDisplay();
+            this.saveDataToStorage(); // Persist changes
         });
 
-        // Listen for time updates
+        // Listen for time updates (every 1s)
         document.addEventListener('time:updated', (e) => {
             this.updateTimeDisplay(e.detail.time);
         });
 
-        // Listen for manual refresh
+        // Listen for manual refresh completion
         document.addEventListener('manual:refresh', () => {
             this.updateStatsDisplay(DataManager.getStats());
             this.updateEventsDisplay();
         });
     }
 
-    initializeRealTimeUpdates() {
-        RealTimeUpdates.init();
-        this.showNotification('Real-time updates activated', 'success');
-    }
-
+    /**
+     * Handle manual data refresh
+     * Triggers immediate update of all data and shows loading state
+     * @private
+     * @async
+     */
     async handleRefresh() {
         const btn = document.getElementById('refresh-btn');
         if (!btn) return;
 
+        // Store original button content
         const originalHTML = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
         btn.disabled = true;
@@ -277,6 +456,7 @@ class App {
             this.showNotification('Failed to refresh data', 'error');
             console.error('Refresh error:', error);
         } finally {
+            // Restore button after 1 second
             setTimeout(() => {
                 if (btn) {
                     btn.innerHTML = originalHTML;
@@ -286,11 +466,17 @@ class App {
         }
     }
 
+    /**
+     * Open event creation modal
+     * Sets default date to today (adjusted for timezone) and focuses title input
+     * @private
+     */
     openEventModal() {
         const modal = document.getElementById('event-modal');
         if (modal) {
             modal.classList.remove('hidden');
             
+            // Set default date to today (adjusted for timezone offset)
             const now = new Date();
             const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
                         .toISOString().split('T')[0];
@@ -299,10 +485,17 @@ class App {
             
             const dateInput = document.getElementById('event-date');
             if (dateInput) dateInput.value = today;
+            
+            // Focus title input for immediate typing
             document.getElementById('event-title')?.focus();
         }
     }
 
+    /**
+     * Close event creation modal
+     * Resets form and clears all error messages
+     * @private
+     */
     closeEventModal() {
         const modal = document.getElementById('event-modal');
         const form = document.getElementById('event-form');
@@ -313,29 +506,42 @@ class App {
         this.clearFormErrors();
     }
 
+    /**
+     * Validate event form data
+     * Checks for required fields and minimum lengths
+     * @param {Object} formData - Form data to validate
+     * @param {string} formData.title - Event title
+     * @param {string} formData.date - Event date (YYYY-MM-DD)
+     * @param {string} formData.time - Event time (HH:MM)
+     * @param {string} formData.status - Event status
+     * @returns {Object} Validation result
+     * @returns {boolean} returns.isValid - Whether form is valid
+     * @returns {Object} returns.errors - Map of field names to error messages
+     * @private
+     */
     validateForm(formData) {
         const errors = {};
         let isValid = true;
 
-        // Validate title
+        // Validate title (minimum 3 characters)
         if (!formData.title || formData.title.trim().length < 3) {
             errors.title = 'Event title must be at least 3 characters';
             isValid = false;
         }
 
-        // Validate date
+        // Validate date is selected
         if (!formData.date) {
             errors.date = 'Please select a date';
             isValid = false;
         }
 
-        // Validate time
+        // Validate time is selected
         if (!formData.time) {
             errors.time = 'Please select a time';
             isValid = false;
         }
 
-        // Validate status
+        // Validate status is selected
         if (!formData.status) {
             errors.status = 'Please select a status';
             isValid = false;
@@ -344,11 +550,17 @@ class App {
         return { isValid, errors };
     }
 
+    /**
+     * Display form validation errors
+     * Shows error messages below fields and adds error styling
+     * @param {Object} errors - Map of field names to error messages
+     * @private
+     */
     displayFormErrors(errors) {
-        // First clear all errors
+        // Clear all previous errors first
         this.clearFormErrors();
         
-        // Then display all new errors at once
+        // Display all new errors
         Object.keys(errors).forEach(field => {
             const errorElement = document.getElementById(`${field}-error`);
             const inputElement = document.getElementById(`event-${field}`);
@@ -364,6 +576,11 @@ class App {
         });
     }
 
+    /**
+     * Clear all form validation errors
+     * Removes error messages and error styling from inputs
+     * @private
+     */
     clearFormErrors() {
         document.querySelectorAll('.error-message').forEach(el => {
             el.textContent = '';
@@ -375,9 +592,16 @@ class App {
         });
     }
 
+    /**
+     * Handle event form submission
+     * Validates data, adds event to DataManager, and updates UI
+     * @param {Event} e - Form submit event
+     * @private
+     */
     handleEventSubmit(e) {
         e.preventDefault();
 
+        // Collect form data
         const formData = {
             title: document.getElementById('event-title')?.value.trim(),
             date: document.getElementById('event-date')?.value,
@@ -389,6 +613,8 @@ class App {
         console.log('Form date input:', formData.date);
         console.log('Today actual:', new Date().toISOString().split('T')[0]);
         console.log('======================');
+        
+        // Validate form data
         const validation = this.validateForm(formData);
 
         if (!validation.isValid) {
@@ -397,11 +623,13 @@ class App {
             return;
         }
 
+        // Show loading overlay during save
         this.showLoadingOverlay();
 
+        // Simulate async save with 500ms delay
         setTimeout(() => {
             try {
-                // Add formatted date to the event
+                // Add formatted date for display
                 formData.dateFormatted = this.formatDate(formData.date);
                 DataManager.addEvent(formData);
                 this.saveDataToStorage();
@@ -417,6 +645,16 @@ class App {
         }, 500);
     }
 
+    /**
+     * Format time from 24-hour to 12-hour format
+     * Converts "14:30" to "02:30 PM"
+     * @param {string} time24 - Time in 24-hour format (HH:MM)
+     * @returns {string} Time in 12-hour format with AM/PM
+     * @private
+     * @example
+     * formatTime("14:30") // Returns "02:30 PM"
+     * formatTime("09:00") // Returns "09:00 AM"
+     */
     formatTime(time24) {
         if (!time24) return '';
         
@@ -425,16 +663,27 @@ class App {
         const ampm = hour >= 12 ? 'PM' : 'AM';
         const hour12 = hour % 12 || 12;
         
+        // Pad single-digit hours with leading zero
         return `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
     }
 
+    /**
+     * Format date string for display
+     * Converts ISO date to readable format: "Mon, Jan 15, 2025"
+     * Uses local date parsing to avoid timezone issues
+     * @param {string} dateString - Date in ISO format (YYYY-MM-DD)
+     * @returns {string} Formatted date string
+     * @private
+     * @example
+     * formatDate("2025-01-15") // Returns "Wed, Jan 15, 2025"
+     */
     formatDate(dateString) {
         if (!dateString) return '';
         
         console.log('=== DATE DEBUGGING ===');
         console.log('Input dateString:', dateString);
         
-        // Test different parsing methods
+        // Parse date components to avoid timezone offset issues
         const [year, month, day] = dateString.split('-');
         const dateLocal = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         const dateUTC = new Date(dateString + 'T00:00:00');
@@ -444,6 +693,7 @@ class App {
         console.log('Local formatted:', dateLocal.toLocaleDateString('en-US'));
         console.log('UTC formatted:', dateUTC.toLocaleDateString('en-US'));
         
+        // Use local date to avoid timezone shifts
         const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
         const result = dateLocal.toLocaleDateString('en-US', options);
         console.log('Final result:', result);
@@ -452,49 +702,63 @@ class App {
         return result;
     }
 
+    /**
+     * Update statistics display with new values
+     * Updates all stat cards, progress bars, and counters
+     * @param {Object} newStats - New statistics values
+     * @private
+     */
     updateStatsDisplay(newStats) {
         // Update upcoming events count
         const upcomingEl = document.getElementById('upcoming-events-count');
         if (upcomingEl) upcomingEl.textContent = newStats.upcomingEvents || DataManager.getStats().upcomingEvents;
 
-        // Update response progress
+        // Update response rate progress bar
         const responseProgress = document.getElementById('response-progress');
         if (responseProgress) {
             responseProgress.style.width = `${newStats.responseRate || DataManager.getStats().responseRate}%`;
         }
 
-        // Update available members
+        // Update available members count
         const availableEl = document.getElementById('available-count');
         if (availableEl) {
             availableEl.textContent = `${newStats.availableMembers || DataManager.getStats().availableMembers}/${DataManager.getStats().totalMembers}`;
         }
 
-        // Update availability progress
+        // Update availability progress bar
         const availabilityProgress = document.getElementById('availability-progress');
         if (availabilityProgress) {
             const percentage = ((newStats.availableMembers || DataManager.getStats().availableMembers) / DataManager.getStats().totalMembers) * 100;
             availabilityProgress.style.width = `${percentage}%`;
         }
 
-        // Update task progress
+        // Update task progress percentage
         const taskProgressEl = document.getElementById('tasks-progress');
         if (taskProgressEl) taskProgressEl.textContent = `${newStats.taskProgress || DataManager.getStats().taskProgress}%`;
 
+        // Update task progress bar
         const taskProgressBar = document.getElementById('tasks-progress-bar');
         if (taskProgressBar) {
             taskProgressBar.style.width = `${newStats.taskProgress || DataManager.getStats().taskProgress}%`;
         }
     }
 
+    /**
+     * Update events display in schedule list
+     * Groups events by date, sorts chronologically, and renders
+     * Shows "No events" message if list is empty
+     * @private
+     */
     updateEventsDisplay() {
         const eventList = document.getElementById('schedule-list');
         if (eventList) {
             const events = DataManager.getEvents();
-            console.log('Updating events display with:', events.length, 'events'); // Debug log
+            console.log('Updating events display with:', events.length, 'events');
             
             // Group and sort events by date
             const eventsByDate = this.groupEventsByDate(events);
             
+            // Show message if no events exist
             if (Object.keys(eventsByDate).length === 0) {
                 eventList.innerHTML = `
                     <li class="date-group">
@@ -507,6 +771,7 @@ class App {
                 return;
             }
             
+            // Render events grouped by date
             eventList.innerHTML = Object.keys(eventsByDate)
                 .sort((a, b) => new Date(a) - new Date(b))
                 .map(date => {
@@ -529,6 +794,14 @@ class App {
         }
     }
 
+    /**
+     * Group events by date and sort by time within each date
+     * @param {Array<Object>} events - Array of event objects
+     * @returns {Object} Events grouped by date (date string as key)
+     * @private
+     * @example
+     * groupEventsByDate([...]) // Returns { "2025-01-15": [...], "2025-01-16": [...] }
+     */
     groupEventsByDate(events) {
         if (!events || !Array.isArray(events)) {
             console.warn('Invalid events data provided to groupEventsByDate');
@@ -539,6 +812,7 @@ class App {
         events.forEach(event => {
             if (!event) return;
             
+            // Use event date or default to today
             const date = event.date || new Date().toISOString().split('T')[0];
             if (!grouped[date]) {
                 grouped[date] = [];
@@ -558,8 +832,20 @@ class App {
         return grouped;
     }
 
+    /**
+     * Convert time string to minutes since midnight
+     * Used for sorting events chronologically
+     * @param {string} timeStr - Time string in 12-hour format (e.g., "02:30 PM")
+     * @returns {number} Minutes since midnight (0-1439)
+     * @private
+     * @example
+     * timeToMinutes("02:30 PM") // Returns 870 (14 * 60 + 30)
+     * timeToMinutes("12:00 AM") // Returns 0
+     */
     timeToMinutes(timeStr) {
         if (!timeStr) return 0;
+        
+        // Parse time string: "02:30 PM"
         const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
         if (!match) return 0;
         
@@ -567,25 +853,45 @@ class App {
         const minutes = parseInt(match[2]);
         const period = match[3].toUpperCase();
         
+        // Convert to 24-hour format
         if (period === 'PM' && hours !== 12) hours += 12;
         if (period === 'AM' && hours === 12) hours = 0;
         
         return hours * 60 + minutes;
     }
 
+    /**
+     * Update current time display in header
+     * @param {string} time - Formatted time string from Date.toLocaleTimeString()
+     * @private
+     */
     updateTimeDisplay(time) {
         const timeEl = document.getElementById('current-time');
         if (timeEl) timeEl.textContent = time;
     }
 
+    /**
+     * Handle sidebar navigation click
+     * Updates active state and switches between views
+     * @param {Event} event - Click event from navigation item
+     * @private
+     */
     handleNavigation(event) {
+        const navItem = event.currentTarget;
+        const view = navItem.dataset.view;
+        
+        // Update active navigation item
         document.querySelectorAll('.nav-links li').forEach(li => {
             li.classList.remove('active');
         });
-        event.currentTarget.classList.add('active');
-
-        const section = event.currentTarget.textContent.trim();
-        this.showNotification(`Navigating to ${section}`, 'info');
+        navItem.classList.add('active');
+        
+        // Update current view and re-render
+        this.currentView = view;
+        this.render();
+        
+        const section = navItem.textContent.trim();
+        this.showNotification(`Switched to ${section} view`, 'info');
         
         // Close mobile menu after navigation
         if (this.isMobileMenuOpen) {
@@ -593,6 +899,14 @@ class App {
         }
     }
 
+    /**
+     * Show toast notification
+     * Creates and animates a notification toast message
+     * Auto-dismisses after 3 seconds
+     * @param {string} message - Notification message text
+     * @param {string} [type='info'] - Notification type: 'success' | 'error' | 'warning' | 'info'
+     * @private
+     */
     showNotification(message, type = 'info') {
         const container = document.getElementById('notification-container');
         if (!container) return;
@@ -600,6 +914,7 @@ class App {
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         
+        // Icon mapping for each notification type
         const icons = {
             success: 'fa-check-circle',
             error: 'fa-exclamation-circle',
@@ -614,26 +929,41 @@ class App {
 
         container.appendChild(notification);
 
+        // Trigger slide-in animation
         setTimeout(() => notification.classList.add('show'), 10);
 
+        // Auto-dismiss after 3 seconds
         setTimeout(() => {
             notification.classList.remove('show');
             setTimeout(() => notification.remove(), 300);
         }, 3000);
     }
 
+    /**
+     * Show loading overlay
+     * Displays full-screen loading spinner
+     * @private
+     */
     showLoadingOverlay() {
         const overlay = document.getElementById('loading-overlay');
         if (overlay) overlay.classList.remove('hidden');
     }
 
+    /**
+     * Hide loading overlay
+     * Removes full-screen loading spinner
+     * @private
+     */
     hideLoadingOverlay() {
         const overlay = document.getElementById('loading-overlay');
         if (overlay) overlay.classList.add('hidden');
     }
 }
 
-// Initialize app when DOM is loaded
+/**
+ * Initialize application when DOM is fully loaded
+ * Entry point for the entire application
+ */
 document.addEventListener('DOMContentLoaded', () => {
     const app = new App();
     app.init();

@@ -1,4 +1,16 @@
-/* Dashboard Layout - No Scrolling Design */
+/**
+ * Layout Styles
+ * Dashboard grid layout, sidebar navigation, responsive design, and modal system
+ */
+
+/* ==========================================================================
+   Main Dashboard Container
+   ========================================================================== */
+
+/**
+ * Primary dashboard container with sidebar and main content area
+ * Uses CSS Grid for no-scroll fixed layout
+ */
 .dashboard-container {
     display: grid;
     grid-template-columns: 250px 1fr;
@@ -7,7 +19,14 @@
     position: relative;
 }
 
-/* Mobile Menu Toggle */
+/* ==========================================================================
+   Mobile Menu Toggle
+   ========================================================================== */
+
+/**
+ * Hamburger menu button for mobile navigation
+ * Only visible on screens < 968px
+ */
 .mobile-menu-toggle {
     display: none;
     position: fixed;
@@ -32,10 +51,13 @@
 
 .mobile-menu-toggle i {
     font-size: 1.2rem;
-    pointer-events: none;
+    pointer-events: none; /* Prevent icon from capturing clicks */
 }
 
-/* Sidebar */
+/* ==========================================================================
+   Sidebar Navigation
+   ========================================================================== */
+
 .sidebar {
     background: var(--primary);
     color: white;
@@ -46,6 +68,7 @@
     overflow: hidden;
 }
 
+/* Logo section */
 .logo {
     padding: 0 20px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -59,6 +82,7 @@
     gap: 10px;
 }
 
+/* Navigation links */
 .nav-links {
     list-style: none;
     flex: 1;
@@ -78,6 +102,7 @@
     background: rgba(255, 255, 255, 0.1);
 }
 
+/* Real-time status indicator */
 .realtime-status {
     padding: 15px 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -97,7 +122,14 @@
     50% { opacity: 0.5; }
 }
 
-/* Main Content - Fixed Height */
+/* ==========================================================================
+   Main Content Area
+   ========================================================================== */
+
+/**
+ * Fixed height main content area with no scrolling
+ * Internal sections handle their own overflow
+ */
 .main-content {
     display: flex;
     flex-direction: column;
@@ -107,6 +139,7 @@
     background: #f5f7fb;
 }
 
+/* Header section */
 .header {
     display: flex;
     justify-content: space-between;
@@ -126,6 +159,7 @@
     font-weight: 500;
 }
 
+/* User info section */
 .user-info {
     display: flex;
     align-items: center;
@@ -144,7 +178,14 @@
     font-weight: bold;
 }
 
-/* Dashboard Layout - Three Column Grid */
+/* ==========================================================================
+   Dashboard Grid Layout
+   ========================================================================== */
+
+/**
+ * Three-column grid: Stats (2fr) | Events (1.5fr) | Team (1.5fr)
+ * Each section manages its own scrolling
+ */
 .dashboard-layout {
     display: grid;
     grid-template-columns: 2fr 1.5fr 1.5fr;
@@ -153,6 +194,7 @@
     overflow: hidden;
 }
 
+/* Stats section with vertical scroll */
 .stats-section {
     display: flex;
     flex-direction: column;
@@ -161,6 +203,7 @@
     padding-right: 10px;
 }
 
+/* Custom scrollbar styling for stats */
 .stats-section::-webkit-scrollbar {
     width: 6px;
 }
@@ -175,6 +218,7 @@
     border-radius: 10px;
 }
 
+/* Events and team sections */
 .events-section,
 .team-section {
     display: flex;
@@ -190,6 +234,7 @@
     overflow: hidden;
 }
 
+/* Event list with scrolling */
 .event-list {
     flex: 1;
     overflow-y: auto;
@@ -210,6 +255,7 @@
     border-radius: 10px;
 }
 
+/* Team members grid with scrolling */
 .team-members-grid {
     flex: 1;
     overflow-y: auto;
@@ -233,7 +279,10 @@
     border-radius: 10px;
 }
 
-/* Compact Stats Cards */
+/* ==========================================================================
+   Compact Stats Cards
+   ========================================================================== */
+
 .dashboard-grid {
     display: flex;
     flex-direction: column;
@@ -266,7 +315,13 @@
     font-size: 0.85rem;
 }
 
-/* Responsive Design */
+/* ==========================================================================
+   Responsive Design
+   ========================================================================== */
+
+/**
+ * Tablet layout: 2-column grid
+ */
 @media (max-width: 1400px) {
     .dashboard-layout {
         grid-template-columns: 1fr 1fr;
@@ -278,17 +333,22 @@
     }
 }
 
+/**
+ * Mobile layout: Single column with hamburger menu
+ */
 @media (max-width: 968px) {
     .dashboard-container {
         grid-template-columns: 1fr;
     }
     
+    /* Show mobile menu button */
     .mobile-menu-toggle {
         display: flex;
         align-items: center;
         justify-content: center;
     }
     
+    /* Sidebar slides in from left */
     .sidebar {
         position: fixed;
         left: -250px;
@@ -303,10 +363,12 @@
         box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
     }
     
+    /* Adjust main content for mobile menu */
     .main-content {
         padding-top: 70px;
     }
     
+    /* Stack dashboard sections vertically */
     .dashboard-layout {
         grid-template-columns: 1fr;
         height: auto;
@@ -319,7 +381,13 @@
     }
 }
 
-/* Modal Styles */
+/* ==========================================================================
+   Modal System
+   ========================================================================== */
+
+/**
+ * Full-screen modal overlay with backdrop
+ */
 .modal {
     position: fixed;
     top: 0;
@@ -343,6 +411,7 @@
     to { opacity: 1; }
 }
 
+/* Modal content box */
 .modal-content {
     background: white;
     border-radius: var(--border-radius);
@@ -363,6 +432,7 @@
     }
 }
 
+/* Modal header */
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -391,7 +461,10 @@
     color: var(--primary);
 }
 
-/* Form Styles */
+/* ==========================================================================
+   Form Styles
+   ========================================================================== */
+
 .event-form {
     padding: 20px;
 }
@@ -407,6 +480,7 @@
     color: var(--dark);
 }
 
+/* Form inputs */
 .form-group input,
 .form-group select {
     width: 100%;
@@ -423,6 +497,7 @@
     border-color: var(--primary);
 }
 
+/* Error state */
 .form-group input.error,
 .form-group select.error {
     border-color: var(--warning);
@@ -435,6 +510,7 @@
     margin-top: 5px;
 }
 
+/* Form action buttons */
 .form-actions {
     display: flex;
     justify-content: flex-end;
@@ -442,7 +518,13 @@
     margin-top: 25px;
 }
 
-/* Notification System */
+/* ==========================================================================
+   Notification System
+   ========================================================================== */
+
+/**
+ * Toast notification container (top-right)
+ */
 .notification-container {
     position: fixed;
     top: 20px;
@@ -453,6 +535,7 @@
     gap: 10px;
 }
 
+/* Individual notification toast */
 .notification {
     background: white;
     padding: 15px 20px;
@@ -476,6 +559,7 @@
     font-size: 1.2rem;
 }
 
+/* Notification types */
 .notification-success {
     border-left: 4px solid var(--success);
 }
@@ -508,7 +592,13 @@
     color: var(--primary);
 }
 
-/* Loading Overlay */
+/* ==========================================================================
+   Loading Overlay
+   ========================================================================== */
+
+/**
+ * Full-screen loading overlay with spinner
+ */
 .loading-overlay {
     position: fixed;
     top: 0;
@@ -541,7 +631,10 @@
     color: var(--gray);
 }
 
-/* Action Buttons */
+/* ==========================================================================
+   Action Buttons
+   ========================================================================== */
+
 .action-buttons {
     display: flex;
     gap: 10px;

@@ -2,7 +2,10 @@
  * Utility helper functions
  */
 
-import { NOTIFICATION_TYPES, DATE_FORMATS } from './constants.js';
+import {
+    NOTIFICATION_TYPES,
+    DATE_FORMATS
+} from './constants.js';
 
 /**
  * Format time for display
@@ -34,7 +37,7 @@ export function stringToColor(str) {
     for (let i = 0; i < str.length; i++) {
         hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
-    
+
     const hue = hash % 360;
     return `hsl(${hue}, 70%, 60%)`;
 }
@@ -115,7 +118,7 @@ export const storage = {
             return null;
         }
     },
-    
+
     set(key, value) {
         try {
             localStorage.setItem(key, JSON.stringify(value));
@@ -125,7 +128,7 @@ export const storage = {
             return false;
         }
     },
-    
+
     remove(key) {
         try {
             localStorage.removeItem(key);
@@ -143,10 +146,13 @@ export const storage = {
 export function showNotification(message, type = NOTIFICATION_TYPES.INFO) {
     // This would integrate with a proper notification system
     console.log(`[${type.toUpperCase()}] ${message}`);
-    
+
     // Dispatch event for notification system
     document.dispatchEvent(new CustomEvent('notification:show', {
-        detail: { message, type }
+        detail: {
+            message,
+            type
+        }
     }));
 }
 
@@ -169,10 +175,10 @@ export function isMobileDevice() {
  */
 export function formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
-    
+
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }

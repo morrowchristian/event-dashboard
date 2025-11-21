@@ -1,3 +1,9 @@
+/**
+ * Team Members Component
+ * Displays team member cards with avatars, names, and roles
+ * Shows team availability and member information in a responsive grid
+ */
+
 import DataManager from '../services/data-manager.js';
 
 class TeamMembers {
@@ -5,6 +11,12 @@ class TeamMembers {
         this.teamMembers = DataManager.getTeamMembers();
     }
 
+    /**
+     * Render team members grid
+     * Creates responsive card layout for team member display
+     * Shows avatar, name, and role for each team member
+     * @returns {string} HTML string for team members card with member grid
+     */
     render() {
         return `
             <div class="card">
@@ -24,14 +36,6 @@ class TeamMembers {
                             </div>
                         </div>
                     `).join('')}
-                </div>
-                <div class="action-buttons">
-                    <button class="btn btn-primary" id="add-event-btn">
-                        <i class="fas fa-plus"></i> Add Event
-                    </button>
-                    <button class="btn btn-outline" id="refresh-btn">
-                        <i class="fas fa-sync"></i> Refresh Data
-                    </button>
                 </div>
             </div>
         `;

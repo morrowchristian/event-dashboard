@@ -2,14 +2,18 @@
  * Application constants and configuration
  */
 
-// Event status constants
+/* 
+ * Event status constants
+ */
 export const EVENT_STATUS = {
     UPCOMING: 'upcoming',
     ONGOING: 'ongoing',
     COMPLETED: 'completed'
 };
 
-// Notification types
+/* 
+ * Notification types
+ */
 export const NOTIFICATION_TYPES = {
     SUCCESS: 'success',
     ERROR: 'error',
@@ -17,7 +21,9 @@ export const NOTIFICATION_TYPES = {
     INFO: 'info'
 };
 
-// Color scheme
+/* 
+ * Color scheme
+ */
 export const COLORS = {
     PRIMARY: '#4361ee',
     SECONDARY: '#3f37c9',
@@ -28,7 +34,9 @@ export const COLORS = {
     GRAY: '#6c757d'
 };
 
-// Team roles
+/* 
+ * Team Roles
+ */
 export const TEAM_ROLES = {
     PROJECT_MANAGER: 'Project Manager',
     EVENT_COORDINATOR: 'Event Coordinator',
@@ -39,28 +47,36 @@ export const TEAM_ROLES = {
     CONTENT_SPECIALIST: 'Content Specialist'
 };
 
-// Local storage keys
+/* 
+ * Local storage keys
+ */
 export const STORAGE_KEYS = {
     TEAM_DATA: 'event-dashboard-team',
     EVENTS_DATA: 'event-dashboard-events',
     SETTINGS: 'event-dashboard-settings'
 };
 
-// API endpoints (for future use)
+/* 
+ * API endpoints (for future use)
+ */
 export const API_ENDPOINTS = {
     EVENTS: '/api/events',
     TEAM: '/api/team',
     STATS: '/api/stats'
 };
 
-// Date and time formats
+/* 
+ * Date and time formats
+ */
 export const DATE_FORMATS = {
     DISPLAY_TIME: 'h:mm A',
     DISPLAY_DATE: 'MMM dd, yyyy',
     ISO_DATE: 'yyyy-MM-dd'
 };
 
-// Default configuration
+/* 
+ * Default configuration
+ */
 export const DEFAULT_CONFIG = {
     TEAM_SIZE: 20,
     UPDATE_INTERVAL: 10000, // 10 seconds
@@ -68,7 +84,9 @@ export const DEFAULT_CONFIG = {
     ITEMS_PER_PAGE: 10
 };
 
-// Feature flags
+/* 
+ * Feature flags
+ */
 export const FEATURE_FLAGS = {
     REAL_TIME_UPDATES: true,
     OFFLINE_MODE: false,
