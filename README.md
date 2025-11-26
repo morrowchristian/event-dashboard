@@ -89,7 +89,7 @@ npm test        #headed mode: npm run test: headed
 
 **Massive modular refactor just landed** — code is now beautifully organized:
 
-- `src/components/` • `src/ui/` • `src/services/` • `src/index.js` (single source of truth)
+- `src/components/` • `src/ui/` • `src/services/` • `src/index.js`
 
 **Known regression (being fixed right now):**
 - Mobile sidebar toggle temporarily broken after full DOM re-render changes
