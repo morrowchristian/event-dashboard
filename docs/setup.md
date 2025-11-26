@@ -1,91 +1,108 @@
 # Setup Guide
 
-## Development Environment Setup
-
-### Prerequisites
-
-- Node.js (v16 or higher)
-- Git
-- Modern web browser
-
-### Installation Steps
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/event-dashboard.git
-   cd event-dashboard
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-The application will be available at `http://localhost:8000`
-
-### Alternative Setup (Without Node.js)
-
-#### Using Python
+## Quick Start (Recommended)
 
 ```bash
-# Python 3
-python -m http.server 8000
-
-# Python 2
-python -m SimpleHTTPServer 8000
+git clone https://github.com/yourusername/event-dashboard.git
+cd event-dashboard
+npm install          # installs only http-server + playwright (dev only)
+npm run dev          # starts server at http://localhost:5500
 ```
 
-#### Using PHP
+The app is **100 static** — no build step, no bundler, no framework.
+
+## Development Server
+
+We use `http-server` (installed as a dev dependency) with proper MIME types and CORS headers.
 
 ```bash
-php -S localhost:8000
+npm run dev
+# → http://localhost:5500
+# → includes --cors and cache disabled for instant reloads
 ```
+
+## Alternative Servers (No Node.js Required)
+
+### Python 3
+```bash
+python -m http.server 5500
+```
+
+### Python 2 (legacy)
+```bash
+python -m SimpleHTTPServer 5500
+```
+
+### PHP
+```bash
+php -S localhost:5500
+```
+
+### Any static server (e.g. Live Server in VS Code)
+Just open the project folder — it will work perfectly.
 
 ## Project Structure
 
-```
+```text
 event-dashboard/
 ├── src/
-│   ├── components/     # UI Components
-│   ├── services/       # Data management
-│   ├── styles/         # CSS stylesheets
-│   ├── utils/          # Helper functions
-│   └── tests/          # Test files
-├── public/             # Static assets
-├── docs/               # Documentation
-└── scripts/            # Build scripts
+│   ├── components/          # Pure UI components (Dashboard, EventList, etc.)
+│   ├── ui/                  # Reusable UI pieces (Notification, Clock, LoadingOverlay)
+│   ├── services/            # DataManager, RealTimeUpdates
+│   ├── index.js             # Single barrel export (all utils & constants)
+│   └── main.js              # App entry point
+├── public/                  # Static assets (icons, future images)
+├── docs/
+│   ├── images/              # Screenshots
+│   ├── api.md               # Public API documentation
+│   └── setup.md             # This file
+├── tests/                   # Playwright E2E tests
+├── .gitignore
+├── package.json
+├── README.md
+└── index.html               # Single HTML entry point
+```
+
+## Running Tests
+
+```bash
+npm test                    # normal mode
+npm run test:headed         # watch tests run in browser
+npm run test:ui             # Playwright UI mode
 ```
 
 ## Browser Support
 
+Fully supported on all modern browsers:
 - Chrome 90+
 - Firefox 88+
 - Safari 14+
 - Edge 90+
+- Mobile Chrome / Safari (iOS & Android)
+
+> No polyfills needed — uses only stable ES6+ features.
 
 ## Troubleshooting
 
-### Common Issues
+### CORS or Module Errors
+→ Never open `index.html` directly via `file://`  
+→ Always use one of the servers above
 
-**CORS errors during development**
-- Use a local server instead of opening HTML file directly
-- Configure server to allow cross-origin requests
+### Styles or Scripts Not Loading
+→ Check DevTools → Network tab for 404s  
+→ Ensure server sets correct `Content-Type: text/javascript` for `.js` files  
+→ `http-server` does this automatically
 
-**Modules not loading**
-- Ensure you're using a modern browser
-- Check that files are served with correct MIME types
+### LocalStorage Not Persisting
+→ Only happens if served over `http://localhost` or `https`  
+→ `file://` protocol blocks localStorage in some browsers
 
-**Styles not applying**
-- Verify CSS file paths in HTML
-- Check browser console for 404 errors
+## Notes
 
-### Getting Help
+- Zero runtime dependencies — production bundle is just your code
+- Development only uses `http-server` and `playwright`
+- Perfect for learning vanilla JS architecture
+- Designed to run instantly on GitHub Pages
 
-- Check the browser console for errors
-- Verify all file paths are correct
-- Ensure JavaScript modules are supported
+You're all set. Just run `npm run dev` and start building.
+```
