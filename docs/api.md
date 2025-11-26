@@ -1,139 +1,118 @@
-# Event Dashboard API Documentation
+# EventFlow Dashboard – Public API Documentation
 
-## Overview
+Current as of November 25, 2025 (post-modular-refactor)
 
-This document describes the JavaScript API for the Event Dashboard components and services.
+## DataManager (`src/services/data-manager.js`)
 
-## Data Manager API
+Central service for all data operations. Uses `localStorage` under the hood.
 
-### `DataManager` Class
+### Methods
 
-Core service for managing application data.
+| Method                  | Description                                      | Returns                         |
+|-------------------------|--------------------------------------------------|---------------------------------|
+| `load()`                | Loads data from `localStorage` on app start      | `void`                          |
+| `save()`                | Persists current events to `localStorage`        | `void`                          |
+| `getEvents()`           | Get all events                                   | `Array<Event>`                  |
+| `addEvent(event)`       | Add a new event (auto-generates `id`)            | `Event` (with `id`)             |
+| `updateEvent(id, data)` | Update existing event by ID                      | `void`                          |
+| `deleteEvent(id)`       | Remove event by ID                               | `void`                          |
 
-#### Methods
+### Event Object Shape
 
-##### `getTeamMembers()`
-
-Returns the list of team members.
-
-**Returns:** `Array<Object>`
-
-```javascript
-[
-  {
-    id: Number,
-    name: String,
-    role: String,
-    avatar: String
-  }
-]
-```
-
-##### `getEvents()`
-
-Returns the list of events.
-
-**Returns:** `Array<Object>`
-
-```javascript
-[
-  {
-    id: Number,
-    time: String,
-    title: String,
-    status: String // 'upcoming', 'ongoing', 'completed'
-  }
-]
-```
-
-##### `getStats()`
-
-Returns dashboard statistics.
-
-**Returns:** `Object`
-
-```javascript
+```ts
 {
-  upcomingEvents: Number,
-  responseRate: Number,
-  availableMembers: Number,
-  totalMembers: Number,
-  taskProgress: Number,
-  remainingTasks: Number
+  id: number;
+  title: string;
+  date: string;           // "2025-12-31"
+  dateFormatted: string;  // "Wednesday, Dec 31"
+  time: string;           // "03:30 PM"
+  status: 'upcoming' | 'ongoing' | 'completed';
 }
 ```
 
-##### `updateStats(newStats)`
+> Stats are computed on-the-fly in `Dashboard.js` — no longer stored.
 
-Updates dashboard statistics.
+## Component Rendering API
 
-**Parameters:**
-- `newStats` (Object): Partial stats object to merge
+All UI components are stateless and expose a static render/template method.
 
-**Returns:** `Object` - Updated stats
+| Component            | File                                 | Method                        | Returns       | Notes                              |
+|----------------------|--------------------------------------|-------------------------------|---------------|------------------------------------|
+| `Dashboard`          | `src/components/Dashboard.js`        | `Dashboard.render()`          | `string`      | Stats cards (computed on-the-fly)  |
+| `EventList`          | `src/components/EventList.js`        | `EventList.render()`          | `string`      | Groups events by date              |
+| `TeamMembers`        | `src/components/TeamMembers.js`      | `TeamMembers.render()`        | `string`      | Grid of team avatars               |
+| `Sidebar`            | `src/components/Sidebar.js`          | `Sidebar.template(isOpen)`    | `string`      | Used by App.js                     |
+| `MobileMenuToggle`   | `src/components/MobileMenuToggle.js` | `MobileMenuToggle.template()` | `string`      | Hamburger button                   |
+| `EventModal`         | `src/components/EventModal.js`       | `EventModal.template()`       | `string`      | Add / Edit modal                   |
+| `DeleteModal`        | `src/components/DeleteModal.js`      | `DeleteModal.template()`      | `string`      | Confirmation modal                 |
 
-##### `addEvent(event)`
+> No instances are created — components are pure functions/classes with static methods.
 
-Adds a new event.
+## Custom Events (Current)
 
-**Parameters:**
-- `event` (Object): Event data without id
+After the refactor, the app uses **one single source-of-truth event**:
 
-**Returns:** `Object` - Created event with id
+```js
+'events:updated'
+```
 
-## Component API
+Dispatched whenever events are added, edited, or deleted.
 
-### Base Component Structure
+### Usage
 
-All components follow this pattern:
+```js
+// Dispatch (done inside DataManager methods)
+document.dispatchEvent(new CustomEvent('events:updated'));
 
-```javascript
-class Component {
-  constructor() {
-    // Initialize component state
-  }
+// Listen (used in App.js)
+document.addEventListener('events:updated', () => {
+  document.querySelector('.stats-section').innerHTML = Dashboard.render();
   
-  render() {
-    // Return HTML string
-    return `
-      <div>Component HTML</div>
-    `;
+  const eventListContainer = document.querySelector('.events-section > div:last-child');
+  if (eventListContainer) {
+    eventListContainer.innerHTML = EventList.render();
   }
-}
-```
-
-### Available Components
-
-#### Dashboard
-
-Renders the main dashboard with statistics cards.
-
-#### EventList
-
-Renders the schedule of events.
-
-#### TeamMembers
-
-Renders the team members grid.
-
-## Event System
-
-### Custom Events
-
-The application uses these custom events:
-
-- `dashboard:refresh` - Triggered when data needs refresh
-- `event:added` - Triggered when new event is added
-- `notification:show` - Triggered to show notifications
-
-### Example Usage
-
-```javascript
-// Dispatch custom event
-document.dispatchEvent(new CustomEvent('dashboard:refresh'));
-
-// Listen for event
-document.addEventListener('notification:show', (e) => {
-  console.log(e.detail.message, e.detail.type);
 });
 ```
+
+**Deprecated / Removed events** (no longer used):
+- `dashboard:refresh`
+- `event:added`
+- `notification:show` (now uses `Notification` class directly)
+
+This keeps the architecture simple, predictable, and easy to debug.
+
+## Utility Exports (`src/index.js`)
+
+All shared helpers are re-exported from a single barrel file.
+
+```js
+export {
+  storage,           // LocalStorage wrapper
+  STORAGE_KEYS,      // { EVENTS: 'EVENTS_DATA' }
+
+  formatTime,        // "15:30" → "03:30 PM"
+  formatDate,        // "2025-12-31" → "Wednesday, Dec 31"
+  time24toInput,     // "03:30 PM" → "15:30"
+
+  generateId,        // () => Date.now()
+  showNotification,  // (msg, type = 'success')
+
+  EVENT_STATUS       // { UPCOMING: 'upcoming', ... }
+};
+```
+
+### Usage Example
+
+```js
+import { formatTime, showNotification, EVENT_STATUS } from './index.js';
+
+const time = formatTime('14:45');        // → "02:45 PM"
+showNotification('Event deleted', 'success');
+
+if (event.status === EVENT_STATUS.COMPLETED) {
+  // ...
+}
+```
+
+Keeping everything exported from one file eliminates circular dependencies and makes refactoring safe and predictable.
