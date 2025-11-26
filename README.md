@@ -1,52 +1,60 @@
-# Event Dashboard
+# EventFlow Dashboard
 
-A real-time event management dashboard built with modern web technologies. Designed for teams of up to 20 people with cross-industry applicability.
+Currently in active development — modular refactor just completed.
 
-![Dashboard Preview](docs/images/dashboard-preview.png)
-![Add Event Modal Preview](docs/images/addEventModal-preview.png)
+A fast, beautiful, real-time event dashboard built with pure vanilla JavaScript.
 
-## 🚀 Features
+![EventFlow Dashboard – Desktop](docs/images/dashboard-preview-desktop.png)
 
-### Core Functionality
-- **Real-time Updates**: Live data synchronization across team members
-- **Event Management**: Create, edit, and track events with multiple views
-- **Team Coordination**: Monitor team availability and task assignments
-- **Progress Tracking**: Visual progress indicators and analytics
-- **Responsive Design**: Works seamlessly across all devices
+### Mobile Experience
 
-### Technical Highlights
-- **Modular Architecture**: Component-based structure for maintainability
-- **Performance Optimized**: Lazy loading and efficient rendering
-- **Accessibility First**: WCAG 2.1 compliant with keyboard navigation
-- **Progressive Web App**: Offline functionality and installable
-- **Testing Coverage**: Comprehensive unit and integration tests
+| Desktop Modal                          | Mobile Modal                           |
+|----------------------------------------|----------------------------------------|
+| ![Add/Edit Event Modal – Desktop](docs/images/add-event-modal-desktop.png) | ![Add/Edit Event Modal – Mobile](docs/images/add-event-modal-mobile.png) |
 
-## 🛠 Tech Stack
+![Mobile Sidebar Open](docs/images/Sidebar-mobile.png)
 
-- **Frontend**: Vanilla JavaScript (ES6+), HTML5, CSS3
-- **Build Tool**: Vite
-- **Testing**: Jest, Testing Library
-- **Charts**: Chart.js
-- **Date Handling**: date-fns
-- **Icons**: Font Awesome
+## Current Status (November 25, 2025)
+- Modular refactor complete
+- Mobile sidebar temporarily broken (being fixed right now)
+- All 10 Playwright tests written – will be green again soon
+- Once mobile UX is solid → v1.0.0
 
-## 📦 Installation
+## Current Status (November 25, 2025)
+
+- Desktop experience: Fully working
+- Mobile sidebar: Broken after recent refactor (being fixed now)
+- All core features implemented
+- Playwright tests written but currently failing due to mobile issues
+- About to enter bug-squashing phase
+
+## Features (Implemented)
+
+- Create, edit, delete events with date & time
+- Events grouped and sorted by date
+- Real-time clock and simulated live updates
+- LocalStorage persistence
+- Gorgeous UI with modals, notifications, loading states
+- Fully responsive (when sidebar is fixed)
+
+## Tech Stack
+
+- Vanilla JavaScript (ES6+ modules)
+- HTML5 + CSS3 (single perfect stylesheet)
+- Font Awesome icons
+- No build tools, no frameworks, no dependencies
+
+## Quick Start
 
 ```bash
-# Clone repository
-git clone https://github.com/yourusername/event-dashboard.git
-
-# Navigate to project
-cd event-dashboard
-
-# Install dependencies
-npm install
-
-# Start development server
 npm run dev
+# → opens at http://localhost:5500
+```
 
-# Run tests
-npm test
+## Screenshots
+#### Dashboard
+![Dashboard Preview](docs/images/dashboard-preview.png)
 
-# Build for production
-npm run build
+#### Add Event Modal
+![Add Event Modal Preview](docs/images/addEventModal-preview.png)
+

@@ -2,31 +2,41 @@
   "name": "event-dashboard",
   "version": "1.0.0",
   "description": "A real-time event dashboard for team management",
+  "private": true,
   "type": "module",
   "main": "src/App.js",
   "scripts": {
-    "dev": "python -m http.server 8000",
-    "start": "python -m http.server 8000",
-    "test": "echo \"No tests yet\" && exit 0",
-    "lint": "echo \"No linter configured\" && exit 0",
-    "build": "echo \"No build process yet\" && exit 0",
-    "deploy": "echo \"Deploy to GitHub Pages\" && exit 0"
+    "dev": "http-server . -p 5500 --cors -c-1",
+    "start": "npm run dev",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:start": "start-server-and-test start http://127.0.0.1:5500 test"
   },
   "keywords": [
     "dashboard",
     "events",
     "team-management",
     "real-time",
-    "javascript"
+    "vanilla-js",
+    "playwright"
   ],
-  "author": "Your Name",
+  "author": "morrowchristian",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/event-dashboard"
+    "url": "git+https://github.com/morrowchristian/event-dashboard.git"
   },
-  "homepage": "https://yourusername.github.io/event-dashboard",
+  "homepage": "https://github.com/morrowchristian/event-dashboard#readme",
+  "bugs": {
+    "url": "https://github.com/morrowchristian/event-dashboard/issues"
+  },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "http-server": "^14.1.1",
+    "start-server-and-test": "^2.1.3"
   }
 }
