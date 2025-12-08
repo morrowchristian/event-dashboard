@@ -1,36 +1,38 @@
 # EventFlow Dashboard – Public API Documentation
 
-Current as of November 25, 2025 (post-modular-refactor)
+Current as of December 7, 2025 (post-unified-system-update)
 
-## DataManager (`src/services/data-manager.js`)
+## DataManager (```src/services/data-manager.js```)
 
-Central service for all data operations. Uses `localStorage` under the hood.
+Central service for all data operations. Uses ```localStorage``` under the hood.
 
 ### Methods
 
 | Method                  | Description                                      | Returns                         |
 |-------------------------|--------------------------------------------------|---------------------------------|
-| `load()`                | Loads data from `localStorage` on app start      | `void`                          |
-| `save()`                | Persists current events to `localStorage`        | `void`                          |
-| `getEvents()`           | Get all events                                   | `Array<Event>`                  |
-| `addEvent(event)`       | Add a new event (auto-generates `id`)            | `Event` (with `id`)             |
-| `updateEvent(id, data)` | Update existing event by ID                      | `void`                          |
-| `deleteEvent(id)`       | Remove event by ID                               | `void`                          |
+| ```load()```            | Loads data from ```localStorage``` on app start  | ```void```                      |
+| ```save()```            | Persists current events to ```localStorage```    | ```void```                      |
+| ```getEvents()```       | Get all events                                   | ```Array<Event>```              |
+| ```addEvent(event)```   | Add a new event (auto-generates ```id```)        | ```Event``` (with ```id```)     |
+| ```updateEvent(id, data)``` | Update existing event by ID                  | ```void```                      |
+| ```deleteEvent(id)```   | Remove event by ID                               | ```void```                      |
 
-### Event Object Shape
+### Event/Task Object Shape
 
-```ts
+```
 {
   id: number;
   title: string;
   date: string;           // "2025-12-31"
   dateFormatted: string;  // "Wednesday, Dec 31"
-  time: string;           // "03:30 PM"
+  time: string;           // "03:30 PM" or "All Day" for tasks
   status: 'upcoming' | 'ongoing' | 'completed';
+  type: 'event' | 'task'; // NEW: Item type
+  priority: 'low' | 'medium' | 'high' | null; // NEW: Only for tasks
 }
 ```
 
-> Stats are computed on-the-fly in `Dashboard.js` — no longer stored.
+> Stats are computed on-the-fly in ```Dashboard.js``` — includes separate event/task counts.
 
 ## Component Rendering API
 
@@ -38,29 +40,45 @@ All UI components are stateless and expose a static render/template method.
 
 | Component            | File                                 | Method                        | Returns       | Notes                              |
 |----------------------|--------------------------------------|-------------------------------|---------------|------------------------------------|
-| `Dashboard`          | `src/components/Dashboard.js`        | `Dashboard.render()`          | `string`      | Stats cards (computed on-the-fly)  |
-| `EventList`          | `src/components/EventList.js`        | `EventList.render()`          | `string`      | Groups events by date              |
-| `TeamMembers`        | `src/components/TeamMembers.js`      | `TeamMembers.render()`        | `string`      | Grid of team avatars               |
-| `Sidebar`            | `src/components/Sidebar.js`          | `Sidebar.template(isOpen)`    | `string`      | Used by App.js                     |
-| `MobileMenuToggle`   | `src/components/MobileMenuToggle.js` | `MobileMenuToggle.template()` | `string`      | Hamburger button                   |
-| `EventModal`         | `src/components/EventModal.js`       | `EventModal.template()`       | `string`      | Add / Edit modal                   |
-| `DeleteModal`        | `src/components/DeleteModal.js`      | `DeleteModal.template()`      | `string`      | Confirmation modal                 |
+| ```Dashboard```      | ```src/components/Dashboard.js```    | ```Dashboard.render()```      | ```string```  | Stats cards including task count   |
+| ```EventList```      | ```src/components/EventList.js```    | ```EventList.render()```      | ```string```  | Unified timeline with priorities   |
+| ```TeamMembers```    | ```src/components/TeamMembers.js```  | ```TeamMembers.render()```    | ```string```  | Grid of team avatars               |
+| ```Sidebar```        | ```src/components/Sidebar.js```      | ```Sidebar.template(isOpen, activeTab)``` | ```string``` | Now supports active tab state      |
+| ```MobileMenuToggle```| ```src/components/MobileMenuToggle.js``` | ```MobileMenuToggle.template()``` | ```string``` | Hamburger button                   |
+| ```EventModal```     | ```src/components/EventModal.js```   | ```EventModal.template()```   | ```string```  | Unified add/edit modal             |
+| ```DeleteModal```    | ```src/components/DeleteModal.js```  | ```DeleteModal.template()```  | ```string```  | Confirmation modal                 |
 
-> No instances are created — components are pure functions/classes with static methods.
+## Unified Event/Task System
 
-## Custom Events (Current)
+### Type-Specific Behavior
+- **Events**: Require time input, display specific times
+- **Tasks**: Show "All Day", include priority selector (High/Medium/Low)
 
-After the refactor, the app uses **one single source-of-truth event**:
+### Priority System
+```
+.priority-high    { background: rgba(247, 37, 133, 0.15); color: #f72585; }
+.priority-medium  { background: rgba(76, 201, 240, 0.15); color: #4cc9f0; }
+.priority-low     { background: rgba(108, 117, 125, 0.15); color: #6c757d; }
+```
 
-```js
+### Sorting Logic
+- Events sorted by time (chronological)
+- Tasks sorted by priority (High → Medium → Low)
+- Mixed items: Events before tasks on same date
+
+## Custom Events
+
+The app uses **one single source-of-truth event**:
+
+```
 'events:updated'
 ```
 
-Dispatched whenever events are added, edited, or deleted.
+Dispatched whenever events/tasks are added, edited, or deleted.
 
 ### Usage
 
-```js
+```
 // Dispatch (done inside DataManager methods)
 document.dispatchEvent(new CustomEvent('events:updated'));
 
@@ -75,18 +93,11 @@ document.addEventListener('events:updated', () => {
 });
 ```
 
-**Deprecated / Removed events** (no longer used):
-- `dashboard:refresh`
-- `event:added`
-- `notification:show` (now uses `Notification` class directly)
-
-This keeps the architecture simple, predictable, and easy to debug.
-
-## Utility Exports (`src/index.js`)
+## Utility Exports (```src/index.js```)
 
 All shared helpers are re-exported from a single barrel file.
 
-```js
+```
 export {
   storage,           // LocalStorage wrapper
   STORAGE_KEYS,      // { EVENTS: 'EVENTS_DATA' }
@@ -98,21 +109,23 @@ export {
   generateId,        // () => Date.now()
   showNotification,  // (msg, type = 'success')
 
-  EVENT_STATUS       // { UPCOMING: 'upcoming', ... }
+  EVENT_STATUS,      // { UPCOMING: 'upcoming', ... }
+  
+  // NEW: Task utilities (if added in future)
+  // getPriorityColor,
+  // formatPriority,
 };
 ```
 
 ### Usage Example
 
-```js
+```
 import { formatTime, showNotification, EVENT_STATUS } from './index.js';
 
 const time = formatTime('14:45');        // → "02:45 PM"
-showNotification('Event deleted', 'success');
+showNotification('Task added successfully', 'success');
 
 if (event.status === EVENT_STATUS.COMPLETED) {
   // ...
 }
 ```
-
-Keeping everything exported from one file eliminates circular dependencies and makes refactoring safe and predictable.
