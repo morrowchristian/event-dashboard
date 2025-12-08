@@ -7,8 +7,8 @@ export default class EventList {
         if (events.length === 0) {
             return `
                 <div class="empty-state">
-                    <p>No events scheduled yet</p>
-                    <p>Click "Add Event" to get started!</p>
+                    <p>No items scheduled yet</p>
+                    <p>Click "Add Item" to get started!</p>
                 </div>
             `;
         }
@@ -20,7 +20,6 @@ export default class EventList {
             grouped[date].push(event);
         });
 
-        // Sort dates
         const sortedDates = Object.keys(grouped).sort((a, b) => new Date(a) - new Date(b));
 
         return `
@@ -30,22 +29,47 @@ export default class EventList {
                         <div class="date-header">${formatDate(date)}</div>
                         ${grouped[date]
                             .sort((a, b) => {
-                                const ta = a.time.match(/(\d+):(\d+)\s*(AM|PM)/i);
-                                const tb = b.time.match(/(\d+):(\d+)\s*(AM|PM)/i);
-                                if (!ta || !tb) return 0;
-                                let ha = parseInt(ta[1]) + (ta[3].toUpperCase() === 'PM' && ta[1] !== '12' ? 12 : 0);
-                                let hb = parseInt(tb[1]) + (tb[3].toUpperCase() === 'PM' && tb[1] !== '12' ? 12 : 0);
-                                if (ta[3].toUpperCase() === 'AM' && ta[1] === '12') ha = 0;
-                                if (tb[3].toUpperCase() === 'AM' && tb[1] === '12') hb = 0;
-                                return ha - hb;
+                                // Sort tasks by priority, then events by time
+                                if (a.type === 'task' && b.type === 'event') return 1;
+                                if (a.type === 'event' && b.type === 'task') return -1;
+                                
+                                // Both are same type
+                                if (a.type === 'event') {
+                                    // Sort events by time
+                                    const ta = a.time.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                                    const tb = b.time.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                                    if (!ta || !tb) return 0;
+                                    let ha = parseInt(ta[1]) + (ta[3].toUpperCase() === 'PM' && ta[1] !== '12' ? 12 : 0);
+                                    let hb = parseInt(tb[1]) + (tb[3].toUpperCase() === 'PM' && tb[1] !== '12' ? 12 : 0);
+                                    if (ta[3].toUpperCase() === 'AM' && ta[1] === '12') ha = 0;
+                                    if (tb[3].toUpperCase() === 'AM' && tb[1] === '12') hb = 0;
+                                    return ha - hb;
+                                } else {
+                                    // Sort tasks by priority (high > medium > low)
+                                    const priorityOrder = { high: 0, medium: 1, low: 2 };
+                                    return priorityOrder[a.priority || 'medium'] - priorityOrder[b.priority || 'medium'];
+                                }
                             })
                             .map(event => `
                                 <div class="event-item" data-event-id="${event.id}">
-                                    <div class="event-time">${event.time}</div>
+                                    <div class="event-time">
+                                        ${event.type === 'event' 
+                                            ? `<i class="fas fa-calendar-alt"></i> ${event.time}`
+                                            : `<i class="fas fa-tasks"></i> ${event.time || 'All Day'}`
+                                        }
+                                    </div>
                                     <div class="event-details">
-                                        <div class="event-title">${event.title}</div>
+                                        <div class="event-title">
+                                            ${event.type === 'task' ? `<i class="fas fa-check-circle task-checkbox"></i> ` : ''}
+                                            ${event.title}
+                                            ${event.type === 'task' && event.priority 
+                                                ? `<span class="priority-badge priority-${event.priority}">${event.priority}</span>`
+                                                : ''
+                                            }
+                                        </div>
                                         <div class="event-status status-${event.status}">
                                             ${event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                                            ${event.type === 'task' ? ' Task' : ' Event'}
                                         </div>
                                     </div>
                                     <div class="event-actions">

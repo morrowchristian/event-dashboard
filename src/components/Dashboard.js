@@ -7,7 +7,9 @@ export default class Dashboard {
             upcoming: events.filter(e => e.status === 'upcoming').length,
             ongoing: events.filter(e => e.status === 'ongoing').length,
             completed: events.filter(e => e.status === 'completed').length,
-            total: events.length
+            total: events.length,
+            events: events.filter(e => e.type === 'event').length,
+            tasks: events.filter(e => e.type === 'task').length
         };
 
         return `
@@ -36,8 +38,15 @@ export default class Dashboard {
                 <div class="stat-card total">
                     <i class="fas fa-calendar-alt"></i>
                     <div>
-                        <h3>${stats.total}</h3>
-                        <p>Total Events</p>
+                        <h3>${stats.events}</h3>
+                        <p>Events</p>
+                    </div>
+                </div>
+                <div class="stat-card" style="border-left: 4px solid #ffc107;">
+                    <i class="fas fa-tasks"></i>
+                    <div>
+                        <h3>${stats.tasks}</h3>
+                        <p>Tasks</p>
                     </div>
                 </div>
             </div>

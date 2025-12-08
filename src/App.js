@@ -11,12 +11,14 @@ import Clock from './ui/Clock.js';
 import DataManager from './services/data-manager.js';
 import RealTimeUpdates from './services/realtime-updates.js';
 import {  storage, STORAGE_KEYS, formatTime, formatDate, time24toInput, generateId, showNotification, EVENT_STATUS} from './index.js';
+
 class App {
     constructor() {
         this.isMobileMenuOpen = false;
         this.currentEditingEventId = null;
         this.notification = new Notification();
         this.loading = new LoadingOverlay();
+        this.activeTab = "dashboard";
     }
 
     init() {
@@ -33,12 +35,12 @@ class App {
         document.getElementById('app').innerHTML = `
             <div class="dashboard-container">
                 ${MobileMenuToggle.template()}
-                ${Sidebar.template(this.isMobileMenuOpen)}
-
+                ${Sidebar.template(this.isMobileMenuOpen, this.activeTab)}
+                
                 <div class="main-content">
                     <div class="header">
                         <div>
-                            <h2>Event Dashboard</h2>
+                            <h2>${this.getPageTitle()}</h2>
                             <div class="current-time" id="current-time"></div>
                         </div>
                         <div class="user-info">
@@ -47,22 +49,7 @@ class App {
                         </div>
                     </div>
 
-                    <div class="dashboard-layout">
-                        <div class="stats-section">${Dashboard.render()}</div>
-                        <div class="events-section">
-                            <div class="section-header">
-                                <h3>Today's Schedule</h3>
-                                <button id="add-event-btn" class="btn btn-primary">
-                                    <i class="fas fa-plus"></i> Add Event
-                                </button>
-                            </div>
-                            ${EventList.render()}
-                        </div>
-                        <div class="team-section">
-                            <h3>Team Members</h3>
-                            ${TeamMembers.render()}
-                        </div>
-                    </div>
+                    ${this.renderActiveTabContent()}
                 </div>
             </div>
 
@@ -105,6 +92,25 @@ class App {
         // Form submit
         document.getElementById('event-form')?.addEventListener('submit', (e) => this.handleEventSubmit(e));
 
+        // Dynamic form fields based on type
+        document.getElementById('event-type')?.addEventListener('change', (e) => {
+            const type = e.target.value;
+            const timeContainer = document.getElementById('time-container');
+            const priorityContainer = document.getElementById('priority-container');
+            const timeInput = document.getElementById('event-time');
+            
+            if (type === 'task') {
+                timeContainer.style.display = 'none';
+                priorityContainer.style.display = 'block';
+                timeInput.required = false;
+                timeInput.value = '';
+            } else {
+                timeContainer.style.display = 'block';
+                priorityContainer.style.display = 'none';
+                timeInput.required = true;
+            }
+        });
+        
         // Edit & delete delegation
         document.getElementById('schedule-list')?.addEventListener('click', (e) => {
             const item = e.target.closest('.event-item');
@@ -129,6 +135,26 @@ class App {
 
         // Real-time updates listener
         document.addEventListener('events:updated', () => this.updateDisplay());
+
+        // Sidebar navigation
+            document.querySelector('.nav-links')?.addEventListener('click', (e) => {
+            const listItem = e.target.closest('li');
+            if (!listItem) return;
+            
+            const tab = listItem.dataset.tab;
+            if (tab && tab !== this.activeTab) {
+                this.activeTab = tab;
+                this.isMobileMenuOpen = false; // Close mobile menu on navigation
+                
+                // Re-render the entire app
+                this.render();
+                this.setupEventListeners(); // Re-attach event listeners
+                this.updateDisplay(); // Update if needed
+                
+                // Show notification
+                this.notification.show(`Switched to ${tab}`, 'info');
+            }
+        });
     }
 
     openEventModal() {
@@ -188,14 +214,17 @@ class App {
 
     handleEventSubmit(e) {
         e.preventDefault();
+        const type = document.getElementById('event-type').value;
         const formData = {
             title: document.getElementById('event-title').value.trim(),
             date: document.getElementById('event-date').value,
-            time: formatTime(document.getElementById('event-time').value),
-            status: document.getElementById('event-status').value
+            time: type === 'event' ? formatTime(document.getElementById('event-time').value) : 'All Day',
+            status: document.getElementById('event-status').value,
+            type: type,
+            priority: type === 'task' ? document.getElementById('event-priority').value : null
         };
 
-        const validation = this.validateForm(formData);
+        const validation = this.validateForm(formData, type);
         if (!validation.isValid) {
             this.displayFormErrors(validation.errors);
             return;
@@ -209,14 +238,14 @@ class App {
                         ...formData,
                         dateFormatted: formatDate(formData.date)
                     });
-                    this.notification.show('Event updated successfully!', 'success');
+                    this.notification.show('Item updated successfully!', 'success');
                 } else {
                     DataManager.addEvent({
                         ...formData,
                         id: Date.now(),
                         dateFormatted: formatDate(formData.date)
                     });
-                    this.notification.show('Event added successfully!', 'success');
+                    this.notification.show('Item added successfully!', 'success');
                 }
                 DataManager.save();
                 this.closeEventModal();
@@ -227,11 +256,21 @@ class App {
         }, 600);
     }
 
-    validateForm(data) {
+    getPageTitle() {
+        const titles = {
+            'dashboard': 'Event Dashboard',
+            'events': 'Event Schedule',
+            'tasks': 'Task Manager',
+            'team': 'Team Members'
+        };
+        return titles[this.activeTab] || 'Event Dashboard';
+    }
+
+    validateForm(data, type) {
         const errors = {};
         if (!data.title || data.title.length < 3) errors.title = 'Title too short';
         if (!data.date) errors.date = 'Date required';
-        if (!data.time) errors.time = 'Time required';
+        if (type === 'event' && !document.getElementById('event-time').value) errors.time = 'Time required';
         return { isValid: Object.keys(errors).length === 0, errors };
     }
 
@@ -248,6 +287,68 @@ class App {
     clearFormErrors() {
         document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
         document.querySelectorAll('.event-form input, .event-form select').forEach(el => el.classList.remove('error'));
+    }
+
+    renderActiveTabContent() {
+        switch(this.activeTab) {
+            case 'dashboard':
+                return `
+                    <div class="dashboard-layout">
+                        <div class="stats-section">${Dashboard.render()}</div>
+                        <div class="events-section">
+                            <div class="section-header">
+                                <h3>Today's Schedule</h3>
+                                <button id="add-event-btn" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Add Event
+                                </button>
+                            </div>
+                            ${EventList.render()}
+                        </div>
+                        <div class="team-section">
+                            <h3>Team Members</h3>
+                            ${TeamMembers.render()}
+                        </div>
+                    </div>
+                `;
+                
+            case 'events':
+                return `
+                    <div class="full-width-section">
+                        <div class="section-header">
+                            <h3>All Events</h3>
+                            <button id="add-event-btn" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add Event
+                            </button>
+                        </div>
+                        ${EventList.render()}
+                    </div>
+                `;
+                
+            case 'team':
+                return `
+                    <div class="full-width-section">
+                        <div class="section-header">
+                            <h3>Team Management</h3>
+                        </div>
+                        ${TeamMembers.render()}
+                    </div>
+                `;
+                
+            case 'tasks':
+                return `
+                    <div class="full-width-section">
+                        <div class="section-header">
+                            <h3>Tasks (Coming Soon)</h3>
+                        </div>
+                        <div class="empty-state">
+                            <p>Task management feature is under development</p>
+                        </div>
+                    </div>
+                `;
+                
+            default:
+                return Dashboard.render();
+        }
     }
 
     updateDisplay() {
