@@ -2,7 +2,7 @@
 
 **A real-time, beautiful, zero-dependency event dashboard built with pure vanilla JavaScript.**
 
-No React. No Vue. No build step. Just HTML, CSS, and modern ES6 modules — running at 60 FPS everywhere.
+No React. No Vue. No build step. Just HTML, CSS, and modern ES6 modules.
 
 ### Dashboard
 
@@ -77,7 +77,7 @@ No React. No Vue. No build step. Just HTML, CSS, and modern ES6 modules — runn
 ## Quick Start
 
 ```
-git clone https://github.com/yourusername/event-dashboard.git
+git clone https://github.com/morrowchristian/event-dashboard.git
 cd event-dashboard
 npm install          # only installs http-server + playwright
 npm run dev          # → http://localhost:5500
@@ -90,7 +90,7 @@ npm test        #headed mode: npm run test: headed
 
 ---
 
-## Current Status (December 2025)
+## Current Status
 
 **Unified Event/Task System Live** — All features working:
 
@@ -108,8 +108,8 @@ npm test        #headed mode: npm run test: headed
 - Pure static rendering - no virtual DOM, just fast native DOM updates
 
 **Test Status:**
-- Core functionality verified manually
-- Playwright tests need updating for new unified system
+- 10 Playwright E2E tests in `src/tests/eventflow-full.test.js` (run with `npm run test:start`)
+- 4 of 10 pass (verified locally); 6 fail against the current unified system (mobile menu toggle, add/edit/delete flows, form validation, sorting) — the test suite needs updating for the unified system
 
 ---
 
